@@ -31,7 +31,7 @@ ResolvAI is an intelligent decision engine that:
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/
+git clone  https://github.com/kavishanimsara/codeXsabra-ResoveAI.git
 cd resolv-ai-copilot
 
 # Create virtual environment
