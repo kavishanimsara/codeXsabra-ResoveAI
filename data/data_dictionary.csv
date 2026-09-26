@@ -1,0 +1,39 @@
+file,column,description
+customers.csv,customer_id,Unique synthetic customer identifier
+customers.csv,region,Synthetic customer region
+customers.csv,customer_type,Prepaid or Postpaid
+customers.csv,plan_id,Customer plan
+customers.csv,registration_date,Synthetic registration date
+customers.csv,preferred_channel,Preferred support channel
+packages.csv,package_id,Unique package identifier
+packages.csv,package_name,Synthetic package name
+packages.csv,package_type,"Data, Social, Unlimited, Voice, or Postpaid"
+packages.csv,price,Package price in LKR
+packages.csv,data_gb,Included data amount
+packages.csv,validity_days,Package validity
+transactions.csv,transaction_id,Unique synthetic transaction identifier
+transactions.csv,customer_id,Links transaction to customer
+transactions.csv,timestamp,Synthetic transaction timestamp
+transactions.csv,transaction_type,"Recharge, package, bill, refund, etc."
+transactions.csv,amount,Transaction amount in LKR
+transactions.csv,status,"Success, Failed, or Pending"
+transactions.csv,payment_method,Synthetic payment channel
+transactions.csv,package_id,Linked package when applicable
+transactions.csv,balance_before,Synthetic balance before transaction
+transactions.csv,balance_after,Synthetic balance after transaction
+usage.csv,usage_id,Unique usage record identifier
+usage.csv,customer_id,Links usage to customer
+usage.csv,timestamp,Synthetic usage timestamp
+usage.csv,data_mb,Synthetic data usage in MB
+usage.csv,voice_minutes,Synthetic voice usage
+usage.csv,sms_count,Synthetic SMS count
+complaints.csv,complaint_id,Unique synthetic complaint identifier
+complaints.csv,customer_id,Links complaint to customer
+complaints.csv,timestamp,Synthetic complaint timestamp
+complaints.csv,complaint_text,Synthetic customer complaint
+complaints.csv,category,Complaint category
+complaints.csv,channel,Complaint channel
+complaints.csv,status,Complaint status
+complaints.csv,resolution,Synthetic resolution action
+complaints.csv,resolution_time_minutes,Synthetic resolution duration
+complaints.csv,ground_truth_root_cause,Synthetic label for model evaluation; hide from customer UI
