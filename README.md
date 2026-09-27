@@ -19,7 +19,7 @@ Customer support agents at Hutch Sri Lanka spend 5–10 minutes per inquiry manu
 
 ```mermaid
 flowchart TD
-    subgraph Data Layer
+    subgraph data_layer [Data Layer]
         C[complaints.csv]
         CU[customers.csv]
         T[transactions.csv]
@@ -27,14 +27,14 @@ flowchart TD
         P[packages.csv]
     end
 
-    subgraph Backend Engine (FastAPI)
+    subgraph backend [Backend Engine (FastAPI)]
         RE[Pandas Rule Engine]
-        AI[Gemini / OpenAI AI Engine]
-        API[FastAPI Router /api/scenarios]
+        AI["Gemini / OpenAI AI Engine"]
+        API["FastAPI Router /api/scenarios"]
     end
 
-    subgraph Frontend Application (React + Vite)
-        UI[Priority Queue & Customer Viewer]
+    subgraph frontend [Frontend Application (React + Vite)]
+        UI["Priority Queue & Customer Viewer"]
         AC[1-Click Resolution Hub]
         TR[Digital Trust Receipt Modal]
     end
@@ -45,9 +45,6 @@ flowchart TD
     API <--> UI
     UI --> AC --> TR
 ```
-
----
-
 ## 🛠️ Tech Stack & Key Modules
 
 | Layer | Technology | Key Capabilities |
