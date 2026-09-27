@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, Activity, Cpu, Sparkles, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import Navbar from './components/Navbar';
 import SidebarQueue from './components/SidebarQueue';
 import CustomerHeader from './components/CustomerHeader';
@@ -165,73 +164,6 @@ export default function App() {
 
         {/* Center workspace */}
         <section className="flex-1 min-w-0 w-full space-y-4">
-
-          {/* ── LIVE BACKEND STATUS BANNER (VISIBLE WHEN TOGGLED) ── */}
-          <AnimatePresence>
-            {isLiveApi && (
-              <motion.div
-                initial={{ opacity: 0, y: -12, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -12, scale: 0.98 }}
-                transition={{ duration: 0.3 }}
-                className="bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#1E242B] text-white rounded-2xl p-4 border border-emerald-500/40 shadow-xl relative overflow-hidden"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
-                  <div className="flex items-start sm:items-center gap-3">
-                    <div className="relative mt-1 sm:mt-0 shrink-0">
-                      <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-sm" />
-                      <div className="absolute inset-0 w-3.5 h-3.5 rounded-full bg-emerald-400 animate-ping" />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-black tracking-wider text-emerald-400 uppercase flex items-center gap-1.5">
-                          <Cpu className="w-3.5 h-3.5" /> FastAPI Backend Live
-                        </span>
-                        <span className="text-[10px] bg-white/10 text-slate-300 font-mono px-2 py-0.5 rounded-md border border-white/10">
-                          POST /analyze-complaint (Port 8000)
-                        </span>
-                        {lastAnalyzedTime && (
-                          <span className="text-[10px] text-emerald-300 font-mono">
-                            Synced @ {lastAnalyzedTime}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="text-xs text-slate-300 mt-1 flex items-center gap-2 flex-wrap">
-                        {isAnalyzing ? (
-                          <span className="flex items-center gap-1.5 text-amber-300 font-bold animate-pulse">
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            Executing Member 2 Rule Engine &amp; Member 3 Gemini AI for {customer.id}…
-                          </span>
-                        ) : activeBackend ? (
-                          <span>
-                            ✓ <strong>Live Facts:</strong> {activeBackend.rule_engine_data?.total_transactions_analyzed || 16} Transactions Evaluated · Discrepancies: <strong>{activeBackend.rule_engine_data?.discrepancy_flags?.join(', ') || 'OK'}</strong> · Confidence: <strong>{((activeBackend.rule_engine_data?.confidence_score || 0.95) * 100).toFixed(0)}%</strong>
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">
-                            Connected to backend. Click "Re-Analyze Case" to query live API.
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => triggerBackendAnalysis(customer.id)}
-                    disabled={isAnalyzing}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shrink-0 shadow-md self-start sm:self-auto"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isAnalyzing ? 'animate-spin' : ''}`} />
-                    {isAnalyzing ? 'Analyzing…' : 'Re-Analyze Case'}
-                  </motion.button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           <AnimatePresence mode="wait">
             <motion.div
               key={customer.id}
