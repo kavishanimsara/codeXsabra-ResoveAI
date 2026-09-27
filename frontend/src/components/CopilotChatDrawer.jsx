@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Send, Sparkles, X, MessageSquare } from 'lucide-react';
-import { PRESET_CHATS } from '../data/mockData';
+const PRESET_CHATS = [
+  { sender: 'copilot', text: 'Hello! I am ResolvAI Copilot. How can I assist you in resolving this customer dispute today?' }
+];
 
 const QUICK_PROMPTS = [
   "Why was this customer billed twice?",
@@ -26,9 +28,9 @@ export default function CopilotChatDrawer({ customer }) {
       if (lower.includes('twice') || lower.includes('duplicate')) {
         reply = `Customer ${customer.id} had 2 USSD transactions within 38s. Gateway ACK delay caused an unconfirmed retry deduction of LKR ${customer.affectedAmount.toFixed(2)}. Recommend instant refund.`;
       } else if (lower.includes('churn')) {
-        reply = `${customer.name} has been a Hutch subscriber since ${customer.registrationDate}. Unresolved dispute raises churn probability to ~74%. Executing the 1-click resolution should restore trust rating to >95%.`;
+        reply = `Customer ${customer.id} has been a Hutch subscriber since ${customer.registrationDate}. Unresolved dispute raises churn probability to ~74%. Executing the 1-click resolution should restore trust rating to >95%.`;
       } else if (lower.includes('usage') || lower.includes('data')) {
-        reply = `${customer.name} is on ${customer.planName}. Current usage: ${(customer.usage.totalDataMb / 1024).toFixed(2)} GB (${customer.usage.percentUsed.toFixed(0)}% of ${customer.usage.packageLimit} quota).`;
+        reply = `Customer ${customer.id} is on ${customer.planName}. Current usage: ${(customer.usage.totalDataMb / 1024).toFixed(2)} GB (${customer.usage.percentUsed.toFixed(0)}% of ${customer.usage.packageLimit} quota).`;
       } else {
         reply = `ResolvAI Copilot reviewed ${customer.id}: primary anomaly = ${customer.primaryAnomaly.replace('_', ' ')}. Confidence: ${(customer.confidenceScore * 100).toFixed(1)}%. Recommended action: "${customer.recommendedAction.label}".`;
       }

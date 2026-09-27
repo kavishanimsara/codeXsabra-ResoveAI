@@ -4,7 +4,17 @@ import {
   Users, AlertTriangle, CheckCircle2, Clock,
   Zap, Activity, Sparkles
 } from 'lucide-react';
-import { KPI_METRICS } from '../data/mockData';
+const KPI_METRICS = {
+  avgResolutionTime: "32s",
+  baselineTime: "8.2m",
+  timeSavedPercent: "92%",
+  firstContactResolution: "95.4%",
+  fcrBaseline: "68.0%",
+  anomalyDetectionRate: "98.7%",
+  disputesHandledToday: 148,
+  autoReconciledToday: 132,
+  customerSatisfaction: "4.9 / 5.0"
+};
 
 const ANOMALY_META = {
   DUPLICATE_TRANSACTION: { label: 'DUPLICATE', color: 'bg-red-100 text-red-700 border-red-200' },
@@ -29,7 +39,7 @@ const itemVariants = {
   show:   { opacity: 1, x: 0, transition: { ease: [0.16, 1, 0.3, 1], duration: 0.3 } },
 };
 
-export default function SidebarQueue({ scenarios, selectedId, onSelectCustomer, resolvedIds }) {
+export default function SidebarQueue({ scenarios, selectedId, selectedTicketId, onSelectCustomer, resolvedIds }) {
   const [activeFilter, setActiveFilter] = useState('ALL');
 
   const filtered = scenarios.filter(s => {
@@ -100,16 +110,16 @@ export default function SidebarQueue({ scenarios, selectedId, onSelectCustomer, 
           >
             <AnimatePresence mode="popLayout">
               {filtered.map(cust => {
-                const isSelected = cust.id === selectedId;
+                const isSelected = (selectedTicketId && cust.ticket?.id === selectedTicketId) || (!selectedTicketId && cust.id === selectedId);
                 const isResolved = resolvedIds.includes(cust.id);
                 const meta = ANOMALY_META[cust.primaryAnomaly] || { label: 'OPEN', color: 'bg-slate-100 text-slate-600 border-slate-200' };
 
                 return (
                   <motion.div
-                    key={cust.id}
+                    key={cust.ticket?.id || cust.id}
                     variants={itemVariants}
                     layout
-                    onClick={() => onSelectCustomer(cust.id)}
+                    onClick={() => onSelectCustomer(cust.id, cust.ticket?.id)}
                     whileHover={{ backgroundColor: '#f8fafc' }}
                     className={`group relative flex items-start gap-3.5 px-4 py-3.5 cursor-pointer transition-colors ${
                       isSelected ? 'bg-orange-50/90' : ''
@@ -128,34 +138,26 @@ export default function SidebarQueue({ scenarios, selectedId, onSelectCustomer, 
                       )}
                     </AnimatePresence>
 
-                    {/* Avatar */}
+                    {/* Icon Badge (Avatar removed) */}
                     <div className="relative shrink-0 mt-0.5">
-                      <img
-                        src={cust.avatar}
-                        alt={cust.name}
-                        className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm"
-                      />
-                      <span className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full ring-2 ring-white flex items-center justify-center ${
-                        isResolved ? 'bg-emerald-500' : 'bg-[#FF5500]'
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shadow-sm ${
+                        isResolved ? 'bg-emerald-500 text-white' : 'bg-[#FF5500] text-white'
                       }`}>
-                        {isResolved
-                          ? <CheckCircle2 className="w-2.5 h-2.5 text-white" />
-                          : <Zap className="w-2.5 h-2.5 text-white" />
-                        }
-                      </span>
+                        {cust.id.slice(-3)}
+                      </div>
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-baseline gap-1 mb-0.5">
-                        <span className={`text-[12.5px] font-bold truncate transition-colors ${isSelected ? 'text-[#FF5500]' : 'text-slate-900 group-hover:text-[#FF5500]'}`}>
-                          {cust.name}
+                        <span className={`text-[12.5px] font-black truncate transition-colors ${isSelected ? 'text-[#FF5500]' : 'text-slate-900 group-hover:text-[#FF5500]'}`}>
+                          Customer {cust.id}
                         </span>
                         <span className="text-[10px] text-slate-400 shrink-0 font-medium">{cust.ticket.loggedTime}</span>
                       </div>
                       
                       <div className="text-[11px] font-mono font-bold text-slate-500 mb-1">
-                        {cust.id} · <span className="font-sans font-medium text-slate-600">{cust.customerType}</span>
+                        Ticket: {cust.ticket.id} · <span className="font-sans font-medium text-slate-600">{cust.customerType}</span>
                       </div>
 
                       <p className="text-xs text-slate-600 line-clamp-2 leading-snug break-words">

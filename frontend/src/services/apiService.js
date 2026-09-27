@@ -1,54 +1,124 @@
 /**
  * ResolvAI Frontend API Service
- * Pluggable adapter to connect to Member 4's FastAPI Backend
- * Endpoint: POST /analyze-complaint (proxied via Vite /api/analyze-complaint)
+ * Adapter to connect React Frontend to FastAPI Backend (port 8000 & Vite Proxy)
  */
 
-export async function analyzeComplaintWithBackend(customerId, complaintText) {
-  try {
-    const response = await fetch('/api/analyze-complaint', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        customer_id: customerId,
-        complaint_text: complaintText
-      })
-    });
+const BASE_URLS = [
+  '',                             // Relative via Vite Proxy (/api/... or /...)
+  'http://127.0.0.1:8000',        // Direct FastAPI Backend
+  'http://localhost:8000'         // Localhost Backend
+];
 
-    if (!response.ok) {
-      throw new Error(`Backend returned status ${response.status}`);
+export async function fetchCustomerScenarios() {
+  const pathVariants = ['/api/scenarios', '/scenarios', '/api/customers', '/customers'];
+  
+  for (const base of BASE_URLS) {
+    for (const path of pathVariants) {
+      try {
+        const url = `${base}${path}`;
+        const response = await fetch(url);
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data) && data.length > 0) {
+            return { success: true, data };
+          }
+        }
+      } catch (err) {
+        // try next variant
+      }
     }
-
-    const data = await response.json();
-    return {
-      success: true,
-      data: data
-    };
-  } catch (error) {
-    console.warn('Backend API call failed, falling back to local reasoning:', error.message);
-    return {
-      success: false,
-      error: error.message
-    };
   }
+
+  return {
+    success: false,
+    error: 'Failed to connect to backend scenarios API'
+  };
+}
+
+export async function analyzeComplaintWithBackend(customerId, complaintText) {
+  const pathVariants = ['/api/analyze-complaint', '/analyze-complaint'];
+  const payload = JSON.stringify({
+    customer_id: customerId,
+    complaint_text: complaintText || ''
+  });
+
+  for (const base of BASE_URLS) {
+    for (const path of pathVariants) {
+      try {
+        const url = `${base}${path}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload
+        });
+        if (response.ok) {
+          const data = await response.json();
+          return { success: true, data };
+        }
+      } catch (err) {
+        // try next variant
+      }
+    }
+  }
+
+  return {
+    success: false,
+    error: 'Failed to analyze complaint via backend'
+  };
+}
+
+export async function executeResolutionWithBackend(customerId, amount, resolutionType = 'REFUND', notes = '') {
+  const pathVariants = ['/api/resolve', '/resolve'];
+  const payload = JSON.stringify({
+    customer_id: customerId,
+    amount: amount || 0.0,
+    resolution_type: resolutionType,
+    notes: notes
+  });
+
+  for (const base of BASE_URLS) {
+    for (const path of pathVariants) {
+      try {
+        const url = `${base}${path}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload
+        });
+        if (response.ok) {
+          const data = await response.json();
+          return { success: true, data };
+        }
+      } catch (err) {
+        // try next variant
+      }
+    }
+  }
+
+  return {
+    success: false,
+    error: 'Failed to execute resolution via backend'
+  };
 }
 
 export async function checkBackendConnection() {
-  try {
-    // Attempt a light OPTIONS or test call to backend
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
+  const checkUrls = [
+    '/api/health',
+    '/health',
+    'http://127.0.0.1:8000/health',
+    'http://localhost:8000/health'
+  ];
 
-    const response = await fetch('/api/docs', {
-      method: 'GET',
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
-    return response.ok || response.status === 200 || response.status === 404;
-  } catch (err) {
-    return false;
+  for (const url of checkUrls) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const response = await fetch(url, { method: 'GET', signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (response.ok) return true;
+    } catch (err) {
+      // try next
+    }
   }
+  return false;
 }

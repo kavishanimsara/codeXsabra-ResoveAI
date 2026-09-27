@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Phone, MapPin, Calendar, Wallet, Radio } from 'lucide-react';
+import { ShieldCheck, Phone, MapPin, Calendar, Wallet, Radio, UserCheck, ChevronDown } from 'lucide-react';
 
-export default function CustomerHeader({ customer, isResolved, liveBalance }) {
+export default function CustomerHeader({ customer, isResolved, liveBalance, scenarios = [], onSelectCustomer }) {
   return (
     <motion.div
       key={customer.id}
@@ -20,6 +20,24 @@ export default function CustomerHeader({ customer, isResolved, liveBalance }) {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Customer Selection Dropdown */}
+          {scenarios.length > 0 && onSelectCustomer && (
+            <div className="relative">
+              <select
+                value={customer.id}
+                onChange={e => onSelectCustomer(e.target.value)}
+                className="appearance-none bg-black/50 hover:bg-black/70 text-white font-bold text-xs pl-3 pr-8 py-1.5 rounded-full border border-white/20 outline-none cursor-pointer transition-colors"
+              >
+                {scenarios.map(s => (
+                  <option key={s.id} value={s.id} className="bg-slate-900 text-white">
+                    Select Customer: {s.id} ({s.customerType})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-white/80 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          )}
+
           <span className="text-[11px] font-bold text-white bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/15 flex items-center gap-1.5 shadow-sm">
             <Radio className="w-3 h-3 text-[#FF5500] animate-pulse" />
             HLR Active
@@ -44,30 +62,19 @@ export default function CustomerHeader({ customer, isResolved, liveBalance }) {
       <div className="p-5 sm:p-6 bg-white">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pb-5 border-b border-slate-100">
 
-          {/* Left: Avatar + Customer Identity */}
+          {/* Left: Customer Identity (Name and Avatar removed) */}
           <div className="flex items-center gap-4">
-            <div className="relative shrink-0">
-              <img
-                src={customer.avatar}
-                alt={customer.name}
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover ring-2 ring-slate-200 shadow-md bg-slate-50"
-              />
-              <span 
-                className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 rounded-full ring-2 ring-white shadow-sm"
-                title="Active Account"
-              />
+            <div className="w-12 h-12 rounded-2xl bg-hutch-gradient text-white flex items-center justify-center shadow-md shrink-0">
+              <UserCheck className="w-6 h-6" />
             </div>
 
             <div>
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  {customer.name}
+                  Customer ID: {customer.id}
                 </h1>
                 <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Verified
-                </span>
-                <span className="bg-slate-100 text-slate-800 text-xs font-mono font-bold px-2.5 py-0.5 rounded-md border border-slate-200">
-                  {customer.id}
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Verified Line
                 </span>
               </div>
 
@@ -147,6 +154,40 @@ export default function CustomerHeader({ customer, isResolved, liveBalance }) {
             </span>
           </div>
         </div>
+
+        {/* Complaints List for this Customer */}
+        {scenarios && customer && (
+          (() => {
+            const custComplaints = scenarios.filter(s => s.id === customer.id);
+            if (custComplaints.length <= 1) return null;
+            return (
+              <div className="mt-4 pt-3.5 border-t border-slate-100 flex flex-wrap items-center gap-2 bg-slate-50/80 p-3 rounded-xl border border-slate-200/60">
+                <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#FF5500]" />
+                  Customer Complaints List ({custComplaints.length} Filed):
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {custComplaints.map(c => {
+                    const isActive = c.ticket.id === customer.ticket.id;
+                    return (
+                      <button
+                        key={c.ticket.id}
+                        onClick={() => onSelectCustomer(c.id, c.ticket.id)}
+                        className={`text-[11px] font-mono font-bold px-3 py-1 rounded-lg border transition-all ${
+                          isActive
+                            ? 'bg-[#FF5500] text-white border-[#FF5500] shadow-sm'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        Ticket #{c.ticket.id} ({c.ticket.category || 'Dispute'})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()
+        )}
 
       </div>
     </motion.div>

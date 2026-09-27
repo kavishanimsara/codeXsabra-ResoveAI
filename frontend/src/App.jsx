@@ -9,30 +9,58 @@ import ExplainableWhyTrail from './components/ExplainableWhyTrail';
 import ActionCenter from './components/ActionCenter';
 import TrustReceiptModal from './components/TrustReceiptModal';
 import CopilotChatDrawer from './components/CopilotChatDrawer';
-import { CUSTOMER_SCENARIOS } from './data/mockData';
-import { analyzeComplaintWithBackend, checkBackendConnection } from './services/apiService';
+import { fetchCustomerScenarios, analyzeComplaintWithBackend, executeResolutionWithBackend, checkBackendConnection } from './services/apiService';
 
 export default function App() {
-  const [selectedId, setSelectedId] = useState('C00001');
+  const [scenarios, setScenarios] = useState([]);
+  const [selectedId, setSelectedId] = useState('');
+  const [selectedTicketId, setSelectedTicketId] = useState('');
   const [resolvedIds, setResolvedIds] = useState([]);
-  const [balances, setBalances] = useState(() =>
-    Object.fromEntries(CUSTOMER_SCENARIOS.map(c => [c.id, c.currentBalance]))
-  );
+  const [balances, setBalances] = useState({});
   const [search, setSearch] = useState('');
-  const [isLiveApi, setIsLiveApi] = useState(false);
+  const [isLiveApi, setIsLiveApi] = useState(true);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [backendData, setBackendData] = useState({});
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [lastAnalyzedTime, setLastAnalyzedTime] = useState(null);
 
+  const handleSelectCustomer = (custId, ticketId = null) => {
+    setSelectedId(custId);
+    if (ticketId) {
+      setSelectedTicketId(ticketId);
+    } else {
+      const firstMatch = scenarios.find(s => s.id === custId);
+      if (firstMatch) {
+        setSelectedTicketId(firstMatch.ticket?.id || '');
+      }
+    }
+  };
+
+  // Load scenarios from backend on mount
+  React.useEffect(() => {
+    async function loadScenarios() {
+      const isConnected = await checkBackendConnection();
+      const res = await fetchCustomerScenarios();
+      if (res.success && res.data && res.data.length > 0) {
+        setScenarios(res.data);
+        setSelectedId(res.data[0].id);
+        setSelectedTicketId(res.data[0].ticket?.id || '');
+        setBalances(Object.fromEntries(res.data.map(c => [c.id, c.currentBalance])));
+        setIsLiveApi(isConnected);
+      }
+    }
+    loadScenarios();
+  }, []);
+
   // Trigger analysis for target customer
-  const triggerBackendAnalysis = async (targetId) => {
+  const triggerBackendAnalysis = async (targetId, ticketText = null) => {
     const custId = targetId || selectedId;
-    const targetCustomer = CUSTOMER_SCENARIOS.find(c => c.id === custId);
+    const targetCustomer = scenarios.find(c => (selectedTicketId ? c.ticket?.id === selectedTicketId : c.id === custId)) || scenarios.find(c => c.id === custId);
     if (!targetCustomer) return;
 
     setIsAnalyzing(true);
-    const res = await analyzeComplaintWithBackend(targetCustomer.id, targetCustomer.ticket.text);
+    const textToAnalyze = ticketText || targetCustomer.ticket.text;
+    const res = await analyzeComplaintWithBackend(targetCustomer.id, textToAnalyze);
     if (res.success && res.data) {
       setBackendData(prev => ({
         ...prev,
@@ -43,33 +71,35 @@ export default function App() {
     setIsAnalyzing(false);
   };
 
-  // Re-fetch analysis whenever live API is toggled ON or customer changes
+  // Re-fetch analysis whenever live API is toggled ON or customer/ticket changes
   React.useEffect(() => {
-    if (isLiveApi) {
+    if (isLiveApi && selectedId) {
       triggerBackendAnalysis(selectedId);
     }
-  }, [isLiveApi, selectedId]);
+  }, [isLiveApi, selectedId, selectedTicketId]);
 
   const handleToggleLiveApi = (newVal) => {
     setIsLiveApi(newVal);
   };
 
-  const filtered = CUSTOMER_SCENARIOS.filter(c => {
+  const filtered = scenarios.filter(c => {
     const q = search.toLowerCase().trim();
     if (!q) return true;
     return (
       c.id.toLowerCase().includes(q) ||
-      c.name.toLowerCase().includes(q) ||
       c.phone.includes(q) ||
-      c.ticket.id.toLowerCase().includes(q)
+      c.ticket.id.toLowerCase().includes(q) ||
+      c.ticket.text.toLowerCase().includes(q) ||
+      c.ticket.category.toLowerCase().includes(q)
     );
   });
 
-  const baseCustomer = CUSTOMER_SCENARIOS.find(c => c.id === selectedId) || CUSTOMER_SCENARIOS[0];
+  const baseCustomer = (selectedTicketId && scenarios.find(c => c.ticket?.id === selectedTicketId)) || scenarios.find(c => c.id === selectedId) || scenarios[0] || null;
 
   // Merge live backend data when available
-  const activeBackend = backendData[baseCustomer.id];
+  const activeBackend = baseCustomer ? backendData[baseCustomer.id] : null;
   const customer = React.useMemo(() => {
+    if (!baseCustomer) return null;
     if (!isLiveApi || !activeBackend) return baseCustomer;
 
     const ai = activeBackend.ai_analysis || {};
@@ -122,11 +152,12 @@ export default function App() {
     };
   }, [baseCustomer, isLiveApi, activeBackend]);
 
-  const isResolved = resolvedIds.includes(customer.id);
-  const liveBalance = balances[customer.id] ?? customer.currentBalance;
+  const isResolved = customer ? resolvedIds.includes(customer.id) : false;
+  const liveBalance = customer ? (balances[customer.id] ?? customer.currentBalance) : 0;
 
-  const handleResolve = (id, amount) => {
+  const handleResolve = async (id, amount) => {
     if (resolvedIds.includes(id)) return;
+    await executeResolutionWithBackend(id, amount);
     setResolvedIds(p => [...p, id]);
     setBalances(p => ({ ...p, [id]: (p[id] || 0) + amount }));
     setTimeout(() => setReceiptOpen(true), 500);
@@ -134,7 +165,7 @@ export default function App() {
 
   const handleReset = () => {
     setResolvedIds([]);
-    setBalances(Object.fromEntries(CUSTOMER_SCENARIOS.map(c => [c.id, c.currentBalance])));
+    setBalances(Object.fromEntries(scenarios.map(c => [c.id, c.currentBalance])));
     setReceiptOpen(false);
   };
 
@@ -150,46 +181,64 @@ export default function App() {
         isLiveApi={isLiveApi}
         setIsLiveApi={handleToggleLiveApi}
         onReset={handleReset}
+        scenarios={scenarios}
+        selectedId={selectedId}
+        onSelectCustomer={handleSelectCustomer}
       />
 
       {/* Main layout */}
       <main className="flex-1 max-w-[1800px] w-full mx-auto px-4 sm:px-5 py-5 flex flex-col lg:flex-row gap-5 items-start relative z-10">
 
-        <SidebarQueue
-          scenarios={filtered}
-          selectedId={customer.id}
-          onSelectCustomer={setSelectedId}
-          resolvedIds={resolvedIds}
-        />
+        {customer ? (
+          <>
+            <SidebarQueue
+              scenarios={filtered}
+              selectedId={customer.id}
+              selectedTicketId={selectedTicketId}
+              onSelectCustomer={handleSelectCustomer}
+              resolvedIds={resolvedIds}
+            />
 
-        {/* Center workspace */}
-        <section className="flex-1 min-w-0 w-full space-y-4">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={customer.id}
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -16 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="space-y-4"
-            >
-              <CustomerHeader customer={customer} isResolved={isResolved} liveBalance={liveBalance} />
-              <DisputeCard ticket={customer.ticket} affectedAmount={customer.affectedAmount} />
-              <ActionCenter
-                customer={customer}
-                isResolved={isResolved}
-                onResolve={handleResolve}
-                onOpenReceipt={() => setReceiptOpen(true)}
-              />
-              <ExplainableWhyTrail customer={customer} />
-              <MultiSourceTimeline customer={customer} />
-            </motion.div>
-          </AnimatePresence>
-        </section>
+            {/* Center workspace */}
+            <section className="flex-1 min-w-0 w-full space-y-4">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={customer.ticket?.id || customer.id}
+                  initial={{ opacity: 0, x: 16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -16 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="space-y-4"
+                >
+                  <CustomerHeader
+                    customer={customer}
+                    isResolved={isResolved}
+                    liveBalance={liveBalance}
+                    scenarios={scenarios}
+                    onSelectCustomer={handleSelectCustomer}
+                  />
+                  <DisputeCard ticket={customer.ticket} affectedAmount={customer.affectedAmount} />
+                  <ActionCenter
+                    customer={customer}
+                    isResolved={isResolved}
+                    onResolve={handleResolve}
+                    onOpenReceipt={() => setReceiptOpen(true)}
+                  />
+                  <ExplainableWhyTrail customer={customer} />
+                  <MultiSourceTimeline customer={customer} />
+                </motion.div>
+              </AnimatePresence>
+            </section>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center p-16 text-slate-600 font-extrabold text-base bg-white rounded-2xl shadow-card border border-slate-200">
+            Connecting to ResolvAI Backend &amp; Loading Live Datasets...
+          </div>
+        )}
       </main>
 
-      <TrustReceiptModal customer={customer} isOpen={receiptOpen} onClose={() => setReceiptOpen(false)} />
-      <CopilotChatDrawer customer={customer} />
+      {customer && <TrustReceiptModal customer={customer} isOpen={receiptOpen} onClose={() => setReceiptOpen(false)} />}
+      {customer && <CopilotChatDrawer customer={customer} />}
 
       <footer className="relative z-10 bg-white/80 backdrop-blur border-t border-slate-200/60 py-3.5 text-xs text-slate-500">
         <div className="max-w-[1800px] mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-2">

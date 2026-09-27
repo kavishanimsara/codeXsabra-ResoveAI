@@ -92,7 +92,6 @@ export default function TrustReceiptModal({ customer, isOpen, onClose }) {
                 <div className="space-y-2.5 text-xs">
                   {[
                     ['Customer ID',       customer.id],
-                    ['Customer Name',     customer.name],
                     ['Issue Detected',    customer.primaryAnomaly.replace('_', ' ')],
                     ['Action Executed',   customer.recommendedAction.label],
                   ].map(([k, v]) => (

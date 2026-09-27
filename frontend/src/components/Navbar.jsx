@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Search, Bell, RefreshCw, Zap, ChevronDown } from 'lucide-react';
 
-export default function Navbar({ searchQuery, setSearchQuery, isLiveApi, setIsLiveApi, onReset }) {
+export default function Navbar({ searchQuery, setSearchQuery, isLiveApi, setIsLiveApi, onReset, scenarios = [], selectedId, onSelectCustomer }) {
   return (
     <motion.header
       initial={{ y: -64, opacity: 0 }}
@@ -34,21 +34,39 @@ export default function Navbar({ searchQuery, setSearchQuery, isLiveApi, setIsLi
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="flex-1 max-w-lg hidden md:block">
-          <div className="relative group">
+        {/* Customer Selector & Search Bar */}
+        <div className="flex-1 max-w-xl flex items-center gap-2">
+          {scenarios.length > 0 && onSelectCustomer && (
+            <div className="relative shrink-0">
+              <select
+                value={selectedId || ''}
+                onChange={e => onSelectCustomer(e.target.value)}
+                className="appearance-none bg-slate-900 text-white font-extrabold text-xs pl-3.5 pr-8 py-2 rounded-xl border border-slate-700 shadow-sm outline-none cursor-pointer hover:bg-slate-800 transition-colors"
+                title="Select Customer ID to view complaint"
+              >
+                {scenarios.map(s => (
+                  <option key={s.id} value={s.id}>
+                    Customer ID: {s.id} ({s.primaryAnomaly ? s.primaryAnomaly.replace('_', ' ') : 'COMPLAINT'})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-white/70 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          )}
+
+          <div className="relative group flex-1 hidden md:block">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-hutch-orange transition-colors" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search by customer ID, phone, or ticket…"
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-100/80 hover:bg-slate-100 focus:bg-white text-sm placeholder:text-slate-400 rounded-2xl border border-transparent focus:border-hutch-orange focus:ring-3 focus:ring-hutch-orange/15 outline-none transition-all duration-200 shadow-sm"
+              placeholder="Search customer ID or complaint…"
+              className="w-full pl-10 pr-4 py-2 bg-slate-100/80 hover:bg-slate-100 focus:bg-white text-xs placeholder:text-slate-400 rounded-xl border border-transparent focus:border-hutch-orange focus:ring-2 focus:ring-hutch-orange/15 outline-none transition-all duration-200 shadow-sm font-semibold"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-lg leading-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-base leading-none"
               >
                 ×
               </button>

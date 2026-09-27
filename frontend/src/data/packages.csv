@@ -1,0 +1,9 @@
+package_id,package_name,package_type,price,data_gb,validity_days
+PKG001,Daily Data 1GB,Data,99,1,1
+PKG002,Weekly Data 5GB,Data,299,5,7
+PKG003,Monthly Data 15GB,Data,599,15,30
+PKG004,Unlimited Social,Social,399,20,30
+PKG005,Unlimited 799,Unlimited,799,50,30
+PKG006,Unlimited 999,Unlimited,999,100,30
+PKG007,Voice Plus,Voice,499,0,30
+PKG008,Postpaid 1499,Postpaid,1499,40,30
